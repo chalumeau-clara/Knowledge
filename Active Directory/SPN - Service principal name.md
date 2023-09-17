@@ -24,7 +24,7 @@ www/WEB-SERVER-01.adsec.local
 Powershell script : 
 List the SPNs present in Active Directory
 
-```
+```powershell
 search = New-Object DirectoryServices.DirectorySearcher([ADSI]"")
 $search.filter = "(servicePrincipalName=*)"
 $results = $search.Findall()
@@ -42,7 +42,7 @@ foreach($result in $results) {
 
 List user accounts that have one (or more) SPNs 
 
-```
+```powershell
 $search = New-Object DirectoryServices.DirectorySearcher([ADSI]"")
 $search.filter = "(&(objectCategory=person)(objectClass=user)(servicePrincipalName=*))"
 $results = $search.Findall()
