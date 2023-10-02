@@ -1,9 +1,11 @@
 Source : 
 https://en.hackndo.com/kerberos-silver-golden-tickets/#pac
 
+contai,s the authorization information : sid, ...
+
 Inside : 
 Name, ID, group membership, security information, ..
-
+![[PAC.png]]
 Encrypted either with the KDC key or with the requested service account’s key.
 
 It is like a security badge
