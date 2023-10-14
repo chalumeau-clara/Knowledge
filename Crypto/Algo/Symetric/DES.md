@@ -1,0 +1,3 @@
+DES, which stands for "Data Encryption Standard," is an early symmetric-key block cipher encryption algorithm. It was widely used in the 1970s and 1980s but is now considered relatively insecure due to advances in computing power. Key features of DES include a fixed block size of 64 bits and a fixed key length of 56 bits.
+
+The algorithm uses a series of substitution and permutation operations in multiple rounds to encrypt and decrypt data. It's vulnerable to brute-force attacks because of its short key length. DES has been largely replaced by more secure encryption algorithms like AES (Advanced Encryption Standard) in modern cryptography, but it played a crucial role in the history of encryption and cryptography.

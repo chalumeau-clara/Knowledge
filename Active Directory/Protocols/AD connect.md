@@ -1,0 +1,1 @@
+AD connect sync synchronize the identities

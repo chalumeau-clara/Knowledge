@@ -1,0 +1,3 @@
+RSA, which stands for "Rivest–Shamir–Adleman," is a widely used asymmetric (public-key) encryption algorithm named after its inventors Ron Rivest, Adi Shamir, and Leonard Adleman. Key features of RSA include the use of a pair of keys: a public key for encryption and a private key for decryption.
+
+In RSA encryption, the public key is used to encrypt data, and the corresponding private key is used to decrypt it. The security of RSA is based on the difficulty of factoring large composite numbers into their prime factors. RSA is commonly used for secure data transmission, digital signatures, and various cryptographic applications. It remains a fundamental algorithm in modern cryptography.

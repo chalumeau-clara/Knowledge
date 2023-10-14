@@ -1,0 +1,4 @@
+  
+AES, which stands for "Advanced Encryption Standard," is a widely used symmetric-key encryption algorithm. It was established as a replacement for the older Data Encryption Standard (DES). AES is known for its security and efficiency.
+
+Key features of AES include a fixed block size of 128 bits and key lengths of 128, 192, or 256 bits. It uses a series of substitution, permutation, and mixing operations in multiple rounds to securely encrypt and decrypt data. AES is considered highly secure and is commonly used in a wide range of applications, including securing data transmission, protecting sensitive information, and ensuring the confidentiality of communications.

@@ -7,3 +7,6 @@ ticket lifetime : 10hours and allow SSO
 
 ![[Pasted image 20231002101018.png]]
 TCP/UDP 88
+
+![[Pasted image 20231010205948.png]]
+

