@@ -11,7 +11,7 @@ Constraint delegation
 	▪ Attackers might leverage Kerberos delegation vulnerabilities against unpatched domain controllers
 
 
-LDAP filters to identify account with delegation
+### LDAP filters to identify account with delegation
 
  Machines with unconstrainted delegation 
  (&(objectCategory=computer)(objectClass=computer)(userAccountControl:1.2.840.11 3556.1.4.803:=524288)) 

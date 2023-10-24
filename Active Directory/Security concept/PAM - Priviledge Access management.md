@@ -1,0 +1,2 @@
+
+Why would I consider this solution? • Reduce the usefulness of any captured credential by granting access to resources only asneeded and for an enforced, limited amount of time • Limit the privileges and exposure of administrative accounts and gain visibility/control over these critical privileges • Provide Just-in-Time (JIT) Administrative privileges and enable the path to “zero” standing rights for privileged user accounts • Provide an auditable, enforced, and time-limited access to critical assets
