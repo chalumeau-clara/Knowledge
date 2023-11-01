@@ -1,4 +1,12 @@
 
+To see : 
+[[Kerberos]]
+[[PAC - Privilege Attribute Certificate]]
+
+Source : 
+https://en.hackndo.com/kerberos-silver-golden-tickets/
+
+
 The attackers know the secret of the KrbtTgt account 
 	• Obtained with a DCSync attack 
 	• Or a stolen backup 

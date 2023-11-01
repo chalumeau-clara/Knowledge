@@ -1,4 +1,5 @@
-
+Sources : 
+https://www.netwrix.com/password_spraying_tutorial_defense.html
 ### What is it ?
 
 Password spray attacks just try very few common passwords on a lot of accounts.

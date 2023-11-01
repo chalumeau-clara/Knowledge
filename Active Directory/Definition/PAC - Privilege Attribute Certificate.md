@@ -1,14 +1,16 @@
 Source : 
 https://en.hackndo.com/kerberos-silver-golden-tickets/#pac
 
-contai,s the authorization information : sid, ...
+Contains the authorization information : sid, ...
+The PAC is found in every tickets (TGT or TGS) and is encrypted either with the KDC key or with the requested service account’s key.
+It is like a security badge : it allows a user to access (or not access) a service, a resource, to perform certain actions.
 
 Inside : 
 Name, ID, group membership, security information, ..
 ![[PAC.png]]
-Encrypted either with the KDC key or with the requested service account’s key.
 
-It is like a security badge
+
+
 
 Summary of a PAC found in a TGT :
 ```powershell
