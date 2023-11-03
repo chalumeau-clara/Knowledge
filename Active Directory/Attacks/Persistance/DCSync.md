@@ -6,6 +6,7 @@ To read :
 Source : 
 https://www.ired.team/offensive-security-experiments/active-directory-kerberos-abuse/dump-password-hashes-from-domain-controller-with-dcsync
 https://www.netwrix.com/privilege_escalation_using_mimikatz_dcsync.html
+https://attack.mitre.org/techniques/T1003/006/
 
 Adversary simulate the behavior's of a domain controller (DC) and retrieve password data via domain replication.
 Use of the protocol [[MS-DRSR - Directory Replication Service Remote Protocol]] to simulate the behavior of a domain controller and ask other domain controllers to replicate information
@@ -165,3 +166,29 @@ Microsoft Windows [Version 10.0.17763.1339]
 C:\Windows\system32>hostname
 fileserver1
 ```
+
+## Detect
+
+Network detection :  `DRSUAPI` RPC requests for the operation `DsGetNCChanges` and compare the source host against a list of domain controllers. If the source host does not appear on that list, then a `DCSync` attack is suspected. However, without significant investment in packet analysis it is not possible to determine which objects were replicated
+
+Windows : Event ID [4662](https://docs.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4662) in the subcategory [Audit Directory Service Access](https://docs.microsoft.com/en-us/windows/security/threat-protection/auditing/audit-directory-service-access) audits basic information about users performing operations within Active Directory for events specified in an object’s [system access-control list (SACL)](https://docs.microsoft.com/en-us/windows/win32/ad/retrieving-an-objectampaposs-sacl).  
+  
+Using this event, it is possible to see when a user exercises their Replicating Directory Changes All extended right by filtering the properties field to include `{1131f6ad-9c07-11d1-f79f-00c04fc2dcd2}` which is the [control access rights GUID](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-adts/1522b774-6464-41a3-87a5-1e5633c3fbbb) for replicating directory changes.  
+  
+However, Active Directory event logs only reveal which objects were replicated when [diagnostic logging](https://support.microsoft.com/en-gb/help/314980/how-to-configure-active-directory-and-lds-diagnostic-event-logging) is enabled. Diagnostic logging can have performance impact and is not likely suitable for long-term production use.
+
+## Mitigate
+
+- Alert in real time on changes to replication permissions.
+- Routinely audit the need for replication permissions and aggressively enforce the principle of least privilege.
+- If a legitimate need for replication permissions exists, adopt compensating controls, such as login restrictions and enhanced auditing, to mitigate the risk of credential theft.
+- Do not allow users to possess administrative privileges across security boundaries. This greatly reduces the ability of an adversary to escalate their privileges.
+
+## Response
+
+- Activate the incident response process and alert the response team
+- Reset the password of the user account that performed the unauthorized DCSync and optionally disable the user to a) force instantaneous replication to all domain controllers and b) disrupt the adversary’s use of that account
+- Quarantine the impacted machines for forensic investigation, as well as eradication and recovery activities
+- Determine which account’s credentials were replicated:
+    - If only specific users were replicated, reset the passwords for those users.
+    - If the entire domain or the `krbtgt` user was replicated, activate your incident response plan for total Active Directory compromise which should include resetting (twice) the password of the krbtgt account.

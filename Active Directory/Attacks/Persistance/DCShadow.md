@@ -2,6 +2,7 @@
 Sources : 
 https://www.ired.team/offensive-security-experiments/active-directory-kerberos-abuse/t1207-creating-rogue-domain-controllers-with-dcshadow
 https://www.netwrix.com/how_dcshadow_persistence_attack_works.html
+https://attack.mitre.org/techniques/T1207/
 
 Create a rogue Domain Controller and push changes to the DC Active Directory objects.
 Abuses of compromised replication permissions to mimic a domain controller and make malicious changes to Active Directory. It is often used to surreptitiously hide persistence mechanisms or to escalate privileges across domain trusts.
@@ -181,6 +182,17 @@ dc1
 ```
 
 
+## Detect
+Network monitoring of `DRSUAPI` RPC requests for the operation `DRSUAPI_REPLICA_ADD` originating from systems that are not known domain controllers
 
+You can analyze events [5136](https://docs.microsoft.com/en-us/windows/security/threat-protection/auditing/event-5136) and [5141](https://docs.microsoft.com/en-us/windows/security/threat-protection/auditing/event-5141) in the Windows event log [Audit Directory Service Changes](https://docs.microsoft.com/en-us/windows/security/threat-protection/auditing/audit-directory-service-changes) subcategory to look for creation and deletion of server objects within sites.
 
 Event ID : `4662`
+
+## Mitigate
+
+- Use host-based firewalls to constrain lateral movement. For example, firewall policies should allow RDP or other remote management only from a small number of approved, controlled and monitored systems.
+- Do not allow users to possess administrative privileges across security boundaries. This greatly reduces how much an adversary can escalate their privileges.
+- Constrain the number of users with permissions to add computer objects to Active Directory.
+- Reduce and tightly govern built-in privileged groups and delegated administrative permissions.
+- Adopt good Active Directory hygiene. In particular, remove unused sites and computer objects.

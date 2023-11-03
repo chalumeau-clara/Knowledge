@@ -42,9 +42,9 @@ john --session=Kerberoasting output.csv
  -  [GetUserSPNs.py](https://github.com/SecureAuthCorp/impacket/blob/master/examples/GetUserSPNs.py) provided by Impacket
 
 
-# Steps of Kerberoasing
+## Steps of Kerberoasing
 
-### - Enumerates SPN
+### Enumerates SPN
 
 ```powershell
 #Build LDAP filter to look for users with SPN values registered for current domain
@@ -81,8 +81,19 @@ ServiceAccount1 http/webserver1
 ServiceAccount2 cifs/appserver2
 ```
 
+OR
 
-### -  Request TGS tickets and extract password hash
+Use BloodHound as it pre-chewed the recon for you.
+
+ `C:\Tools\BloodHound`.
+
+ Click on the burger menu on the top left ![BHBURGER.png](https://labondemand.blob.core.windows.net/content/lab127270/BHBURGER.png) and then click on the **Analysis** tab. In the **Kerberos Interaction** section, click on **List all Kerberoastable Accounts**. Then search the account **SVC-SQL@CONTOSO.COM** in the graph.
+    
+5. Once located, click on **SVC-SQL@CONTOSO.COM**. The menu of the left will switch to the **Node Info** tab. Scroll down and look at the information in the **NODE PROPERTIES** section.
+    
+    This looks like a prime target for Kerberos roasting 🍗
+
+### Request TGS tickets and extract password hash
 
 #### With Rubeus : https://github.com/GhostPack/Rubeus
 
@@ -121,6 +132,7 @@ or
 
 > This will request a TGT (encrypted with RC4-HMAC) for all enabled user accounts with the flag "Kerberos pre-authentication not required".
 
+
 or
 
 ```powershell
@@ -132,7 +144,7 @@ New-Object System.IdentityModel.Tokens.KerberosRequestorSecurityToken -ArgumentL
 Invoke-Mimikatz -Command '"kerberos::list /export"' #Export tickets to current folder
 ```
 
-### - Crack the password offline
+### Crack the password offline
 
 ```powershell
 PS> .\hashcat.exe -m 13100 -o cracked.txt -a 0 .\Hash.txt .\wordlist.txt
@@ -168,7 +180,7 @@ $krb5tgs$23$*USER$DOMAIN$http/webserver1*$e556af133a0ca7f310381a7294099034$53db1
 - **-o svc-sql.txt** will save the result with the actual password in a local txt file
 - **-O** is to run hashcat is optimized kernel mode as we don't have a lot of resources on our virtual machine
 
-### - Use priviledge to further obj
+### Use priviledge to further obj
 
 ```powershell
 PS> runas /netonly /User:ServiceAccount1 powershell.exe
@@ -195,7 +207,47 @@ Instance        IsSysadmin
 SQLServer1      Yes
 ```
 
-## Mitigation 
+
+## Detect
+
+
+It is possible to detect several aspects of Kerberoasting by monitoring the Windows event log for anomalous ticket-granting service (TGS) requests. Events [4769](https://docs.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4769) and [4770](https://docs.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4770) in subcategory [Audit Kerberos Service Ticket Operations](https://docs.microsoft.com/en-us/windows/security/threat-protection/auditing/audit-kerberos-service-ticket-operations) audit all TGS requests and renewals. These events should be examined for:  
+
+- **Use of RC4 encryption** — Because RC4 is considered a weak algorithm, TGS requests and replies that include an encryptionType of 0x17 (rc4-hmac) are suspicious. RC4 hashes can be brute forced more easily than AES, so an adversary may attempt to explicitly request RC4 for this purpose.
+- **Abnormal volume of TGS requests** — Adversaries casting a wide net or running Kerberoasting tools with default configuration options may trigger a large number of TGS requests than normally observed for a given user. Establishing a baseline for TGS request volume and detecting deviations from it can be a valuable way to spot Kerberoasting attacks.
+
+Additionally, establishing a Kerberoasting honeypot — a user account with a defined SPNs that isn’t actually used — can help you detect early reconnaissance and actual Kerberoasting activity.
+### Check the logs on your domain controller
+
+ **Event Viewer (Local)** > **Windows Logs** > **Security**.
+ 
+ `4769` 
+
+ On the **Actions** pane **Find** window type `svc-sql` and click **Find Next**.
+
+Here is the only trace that this attack left on the environment. And as you can see, it is not even a failed logon or anything super suspicious: 
+
+![[Pasted image 20231103214359.png]]
+    > The event **4769** is generated when a failed authentication takes place on the sytem. It tells you information about:
+    > 
+    > - The account for tp whom the ticket was issued, here **red@CONTOSO.COM**
+    > - The account for which the ticket was issued, here **svc-sql**, note that we do not see the servicePrincipalName
+    > - The source IP of the authentication attempt
+    > - The encryption type used for the ticket, here **0x17** means **RC4-HMAC**
+    > - The error code if the ticket issuance failed, here it is **0x0** because it was a success All the information about the event 4769 can be found in the 🔗 [security event documentation](https://docs.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4769).
+    [more...](https://labclient.labondemand.com/Instructions/408ee615-f168-4d09-8db9-7640eef31f16?rc=10#)
+    
+
+## Mitigate
+
+To protect service account passwords against Kerberoasting attacks, you can:  
+
+- **Reject authentication requests not using Kerberos [Flexible Authentication Secure Tunneling (FAST)](https://tools.ietf.org/html/draft-ietf-krb-wg-preauth-framework-10)** — Also called Kerberos Armoring, this pre-authentication extension establishes a pre-authentication secure channel between the client and domain controller, and is designed to better protect Kerberos tickets from offline password cracking attempts. While FAST can eliminate the risk posed by Kerberoasting, it can be challenging for organizations to rapidly enable and enforce.
+- **Eliminate the use of insecure protocols in Kerberos** — While entirely disabling RC4 is another large undertaking, it is possible to configure individual service accounts to not permit the RC4 protocol. The attribute msDS-SupportedEncryptionTypes can be set to 0x18 (decimal 24) to enable only AES128 and AES256. This has the added benefit of increasing the sensitivity of the detection: Use of RC4 in a TGS request is a stonger sign of malicious activity.
+- **Adopt strong password hygiene practices for service accounts** — Service account passwords should be randomly generated, have a minimum of 30 characters, and changed regularly.
+- **Use [group managed service accounts (gMSAs)](https://docs.microsoft.com/en-us/windows-server/security/group-managed-service-accounts/group-managed-service-accounts-overview) when possible** — The passwords for gMSAs are 256 random bytes and are automatically generated and frequently changed by Active Directory. Removing this burden from administrators helps ensure it is done in an accurate and timely manner.
+- **Audit the assignment of SPNs to powerful user accounts** — For example, members of Domain Admins should not be used as service accounts and therefore should not have SPNs assigned.
+- Enable Kerberos pre-authentication
 
 -  Security Event ID 4769 – A Kerberos ticket was requested
 	-  Service name should not be krbtgt
@@ -214,263 +266,9 @@ SQLServer1      Yes
 #### LDAP query to search for user with SPN
 (&(objectCategory=person)(servicePrincipalName=*))
 
+## Respond
 
-
-(ING) LAB 3 - The compromise of credentials
-
-3 Hr 59 Min Remaining
-
-Instructions Resources Help  100%
-
-## Exercise 5 - Roast Kerberos service tickets [optional]
-
-Well well **Miss Red** your last attacks left quite the traces in the logs. Let's try to be more discreet this time. Let's attack a user's password without making a million entry in the logs. It is time for you to switch gear and use Kerberos roasting attacks.
-
-### Task 1 - Detect potential Kerberos roastable users
-
-For this, you can use BloodHound as it pre-chewed the recon for you.
-
-1. Log back on **[CLI01](https://labclient.labondemand.com/Instructions/408ee615-f168-4d09-8db9-7640eef31f16?rc=10#)** using the following credentials:
-    
-    |||
-    |---|---|
-    |Username|`CONTOSO\red`|
-    |Password|`NeverTrustAny1!`|
-    
-2. Open a new **File Explorer** window and navigate to `C:\Tools\BloodHound`.
-    
-3. Double click on **BloodHound.exe** and log in with these credentials:
-    
-    |||
-    |---|---|
-    |Neo4j Username|`neo4j`|
-    |Neo4j Password|`NeverTrustAny1!`|
-    
-4. Click on the burger menu on the top left ![BHBURGER.png](https://labondemand.blob.core.windows.net/content/lab127270/BHBURGER.png) and then click on the **Analysis** tab. In the **Kerberos Interaction** section, click on **List all Kerberoastable Accounts**. Then search the account **SVC-SQL@CONTOSO.COM** in the graph.
-    
-5. Once located, click on **SVC-SQL@CONTOSO.COM**. The menu of the left will switch to the **Node Info** tab. Scroll down and look at the information in the **NODE PROPERTIES** section.
-    
-    📝 When was the password last set?
-    
-    📝 When does the password expire?
-    
-    This looks like a prime target for Kerberos roasting 🍗
-    
-
-### Task 2 - Rquest for a ticket and save it on the disk
-
-1. You are still on **[CLI01](https://labclient.labondemand.com/Instructions/408ee615-f168-4d09-8db9-7640eef31f16?rc=10#)**. If you don't have a **Windows Terminal** already open, then right click on the Start menu ![11menu.png](https://labondemand.blob.core.windows.net/content/lab127270/11menu.png) and click on **Windows Terminal (Admin)**.
-    
-2. Change the current directory by typing `cd \Tools\Ghostpack` and hit **Enter**.
-    
-3. Execute the following command `.\Rubeus.exe kerberoast /outfile:svc-sql.ticket`.
-    
-    > This will request for a ticket for all enabled user accounts with a servicePrincipalName. In our case, it will only be **svc-sql**.
-    
-
-At this point we have the ticket saved locally **C:\Tools\Ghostpack\svc-sql.ticket**. Now we need to roast it 🔥
-
-### Task 3 - Roast the ticket
-
-In our case we will perform a dictionary attack against the ticket. We don't have the performance in our lab to use GPU and try a full-on rainbow attack on the ticket.
-
-1. You are still on **[CLI01](https://labclient.labondemand.com/Instructions/408ee615-f168-4d09-8db9-7640eef31f16?rc=10#)**. If you don't have a **Windows Terminal** already open, then right click on the Start menu ![11menu.png](https://labondemand.blob.core.windows.net/content/lab127270/11menu.png) and click on **Windows Terminal (Admin)**.
-    
-2. Change the current directory by typing `cd \Tools\hashcat` and hit **Enter**.
-    
-3. Execute the following command `.\hashcat32.exe -a 0 -m 13100 C:\Tools\Ghostpack\svc-sql.ticket passwords.lst -o svc-sql.txt -O` Here are some details about the parameters:
-    
-    - **-a 0** is for dictionary attack, on our case the dictionary is the file **passwords.lst**
-    - **-m 13100** is to tell hashcat that we are doing a TGS Kerberos ticket, in our case saved in this location **C:\Tools\Ghostpack\svc-sql.ticket**
-    - **-o svc-sql.txt** will save the result with the actual password in a local txt file
-    - **-O** is to run hashcat is optimized kernel mode as we don't have a lot of resources on our virtual machine
-    
-    ![HASHCATOUTPUT.png](https://labondemand.blob.core.windows.net/content/lab127270/HASHCATOUTPUT.png)
-    
-4. Open a **File Explorer** window and navigate to `C:\Tools\hashcat` and open the file **svc-sql.txt** with **Notepad**.
-    
-5. On the **Notepad** window, click **View** and check **Word wrap**. You should see the password at the very end of the file.
-    
-    📝 What the password for the **svc-sql** account?
-    
-6. At this point it is possible that the **Windows Terminal** console is hanging. Close the window.
-    
-
-Time to bring the news to **Mister Blue**.
-
-0% Tasks Complete
-
-PreviousNext: Exercise 6 - Detect...
-
-Live Chat
-
-
-(ING) LAB 3 - The compromise of credentials
-
-3 Hr 59 Min Remaining
-
-Instructions Resources Help  100%
-
-## Exercise 6 - Detect Kerberos roasting [optional]
-
-**Miss Red** came up strong this time… She found the password of a service account which is also a privileged account. Let see if we could have avoided it…
-
-### Task 1 - Check the logs on your domain controller
-
-Welcome back **Mister Blue**, let's dig into our DC logs.
-
-1. Connect back to **[DC01](https://labclient.labondemand.com/Instructions/408ee615-f168-4d09-8db9-7640eef31f16?rc=10#)** with the following credentials:
-    
-    |||
-    |---|---|
-    |Username|`CONTOSO\blue`|
-    |Password|`NeverTrustAny1!`|
-    
-2. If the **Event Viewer** is not already open, right click on the Start menu ![2022menu.png](https://labondemand.blob.core.windows.net/content/lab127270/2022menu.png) and click on **Event Viewer**. Then navigate to **Event Viewer (Local)** > **Windows Logs** > **Security**.
-    
-3. On the **Actions** pane, click on **Filter Current Log…** and where you see type `4769` and click **OK**.
-    
-    📝 What is the **Task Category** of the event **4769**?
-    
-4. On the **Actions** pane, click on **Find…**, in the **Find** window type `svc-sql` and click **Find Next**.
-    
-5. Here is the only trace that this attack left on the environment. And as you can see, it is not even a failed logon or anything super suspicious: ![4769.png](https://labondemand.blob.core.windows.net/content/lab127270/4769.png)
-    
-    > The event **4769** is generated when a failed authentication takes place on the sytem. It tells you information about:
-    > 
-    > - The account for tp whom the ticket was issued, here **red@CONTOSO.COM**
-    > - The account for which the ticket was issued, here **svc-sql**, note that we do not see the servicePrincipalName
-    > - The source IP of the authentication attempt
-    > - The encryption type used for the ticket, here **0x17** means **RC4-HMAC**
-    > - The error code if the ticket issuance failed, here it is **0x0** because it was a success All the information about the event 4769 can be found in the 🔗 [security event documentation](https://docs.microsoft.com/en-us/windows/security/threat-protection/auditing/event-4769).
-    
-    [more...](https://labclient.labondemand.com/Instructions/408ee615-f168-4d09-8db9-7640eef31f16?rc=10#)
-    
-    📝 What is the **Ticket Encryption Type** in plain text?
-    
-
-### Task 2 - Identify ideal target for roasting
-
-You do not need to wait for **Miss Red** report. You can identify yummy kerberos roasting targets with a simple LDAP filter:
-
-1. You are still connected on **[DC01](https://labclient.labondemand.com/Instructions/408ee615-f168-4d09-8db9-7640eef31f16?rc=10#)** with the following credentials:
-    
-    |||
-    |---|---|
-    |Username|`CONTOSO\blue`|
-    |Password|`NeverTrustAny1!`|
-    
-2. Right click on the Start menu ![2022menu.png](https://labondemand.blob.core.windows.net/content/lab127270/2022menu.png) and click on **run**.
-    
-3. In the **Run** window, type `dsac.exe` and click **Run**.
-    
-4. In the **Active Directory Administrative Center** window, click on **Global Search** in the left.
-    
-5. In the **GLOBAL SEARCH** section, click on **Convert to LDAP** and type the following in the text area `(&(objectCategory=person)(servicePrincipalName=*))` and click **Apply**. You can disregard the **krbtgt** account. You san see that you also found the **svc-sql**.
-    
-    > You could refine the filter to include only **enabled** accounts for which the **password never expired** as they are definitely the best targets.
-    
-
-### Task 3 - Enable AES256 encryption type
-
-Changing the encryption type doesn't make the account uncrackable using Kerberos Roasting tools and techniques. But it makes things slightly more complicated as:
-
-- AES256 hash are salted, so users with the same password will not have the same AES256 hash. This forces an attacker to calibrate a rainbow attack specifically for that ticket and is time consuming.
-- it also gives you a detection opportunity as attackers might explicitly ask for lower encryption and make it easier for you to spot suspicious ticket issuance in the logs
-
-1. You are still connected on **[DC01](https://labclient.labondemand.com/Instructions/408ee615-f168-4d09-8db9-7640eef31f16?rc=10#)** with the following credentials:
-    
-    |||
-    |---|---|
-    |Username|`CONTOSO\blue`|
-    |Password|`NeverTrustAny1!`|
-    
-2. You should still have the **Active Directory Administrative Center** open in the search result page, double click on the **svc-sql** user.
-    
-3. In the **svc-sql** window, expand the **Encryption options** on the right side. Select **Other encryption options**, tick the checkbox **This account supports Kerberos AES256 bit encryption** and click **OK**.
-    
-    > Tickets for this account should now be using AES256. Note that if that ticket needs to be used on system which do not support AES256 for Kerberos encryption, this might break workload. Always make sure your systems are up-to-date and support the latest encryption.
-    
-    Note that the AES keys for this account might not exist. If the account is old and the password was changed at a time AES256 was not supported by domain controllers (like the Windows Server 2003 era) the DCs will still issue RC4-HMAC ticket for the account until the password has be reset twice.
-    
-    **Assumed breach!** If you find an ideal account for roasting because the password has not changed in a long time and AES256 was never enabled, just pretend the account is already compromised. Enable AES256 and change the password twice in a row. Or event better… Replace the account with a gMSA account!
-    
-    🔗 [Group Managed Service Accounts Overview](https://docs.microsoft.com/en-us/windows-server/security/group-managed-service-accounts/group-managed-service-accounts-overview)
-    
-
-0% Tasks Complete
-
-PreviousNext: Exercise 7 - Roast...
-
-Alert
-
-**Connection Issues?**
-
-The connection to your lab machines appears to have been interrupted.
-
-Live Chat
-
-
-(ING) LAB 3 - The compromise of credentials
-
-3 Hr 59 Min Remaining
-
-Instructions Resources Help  100%
-
-## Exercise 7 - Roast Kerberos TGT [optional]
-
-What if we could roast users even if they don't have a servicePrincipalName? Well, no problem! If an admin has disabled Kerberos pre-authentication on a user account (they sometimes do it by mistake during troubleshooting and forget to add it back), then we can ask for a TGT for that account and try to roast it.
-
-### Task 1 - Identify accounts without Kerberos pre-authentication
-
-1. Log back on **[CLI01](https://labclient.labondemand.com/Instructions/408ee615-f168-4d09-8db9-7640eef31f16?rc=10#)** using the following credentials:
-    
-    |||
-    |---|---|
-    |Username|`CONTOSO\red`|
-    |Password|`NeverTrustAny1!`|
-    
-2. right click on the Start menu ![11menu.png](https://labondemand.blob.core.windows.net/content/lab127270/11menu.png) and click on **Windows Terminal (Admin)**.
-    
-3. In the **Windows Terminal** window, change the current directory by typing `cd \Tools\Ghostpack` and hit **Enter**.
-    
-4. Execute the following command `.\Rubeus.exe asproast /enc:RC4 /outfile:users.tgt`.
-    
-    > This will request a TGT (encrypted with RC4-HMAC) for all enabled user accounts with the flag "Kerberos pre-authentication not required".
-    
-
-At this point we have the TGT of **Connie.Flores** saved locally **C:\Tools\Ghostpack\users.tgt**. Now you just need to roast it using your favorit tool.
-
-### Task 2 - Enable Kerberos pre-authentication
-
-Hello again **Mister Blue**! Words on the street are that **Miss Red** was able to crack a TGT… Well, probably due to the misconfiguration of some accounts in your domain. Let's identify which one and correct it.
-
-1. Go back on **[DC01](https://labclient.labondemand.com/Instructions/408ee615-f168-4d09-8db9-7640eef31f16?rc=10#)** with the following credentials:
-    
-    |||
-    |---|---|
-    |Username|`CONTOSO\blue`|
-    |Password|`NeverTrustAny1!`|
-    
-2. You should still have the **Active Directory Administrative Center**. Click on **Global Search** in the left.
-    
-3. In the **GLOBAL SEARCH** section, click on **Convert to LDAP** and type the following in the text area `(&(objectClass=user)(userAccountControl:1.2.840.113556.1.4.803:=4194304))` and click **Apply**.
-    
-    > The **userAccountControl** attribute is well documented here: 🔗 [Use the UserAccountControl flags to manipulate user account properties](https://docs.microsoft.com/en-us/troubleshoot/windows-server/identity/useraccountcontrol-manipulate-account-properties)
-    
-    📝 What is the default userAccountControl value for a regular user account?
-    
-    📝 What is the userAccountControl flag for a disabled account?
-    
-4. Double click on **Connie Flores** account. In the **Account** section, expand **Other options** and uncheck **Do not require Kerberos pre-authentication**.
-    
-    This is the option on a user account's properties page in the **dsa.msc** console: ![CONNIE1.png](https://labondemand.blob.core.windows.net/content/lab127270/CONNIE1.png)
-    
-    Ideally you will need to reset the password twice in a row… Again that's the assumed breach mindset.
-    
-
-0% Tasks Complete
-
-PreviousNext: Exercise 8 -...
-
-Live Chat
+- Activate the incident response process and alert the incident response team.
+- Quarantine any implicated computers (e.g., the host that requested service tickets) for forensic investigation and eradication and recovery activities.
+- Reset the password for the user account performing the Kerberoasting.
+- Reset the password for any service accounts for which TGS tickets were requested. Priority should be given to privileged accounts.
