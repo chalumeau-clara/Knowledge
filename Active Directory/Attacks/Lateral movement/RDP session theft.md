@@ -23,13 +23,6 @@ Detection and prevention
 The attack leaves quite a lot of artefacts behind ▪ Process creation for tscon.exe running as SYSTEM ▪ Creation of a new service ▪ Most EDRs will detect it ▪ To prevent it… It’s all about good administrative practices ▪ Users should not leave RDP session signed-in while inactive ▪ Admins should not connects using RDP to servers where the local administrators have less privileges than them on the network then no privilege escalation are possible ▪ Use /retrictedadmin mode, you can still have your session taken over, but no privilege escalation are possible
 
 
-
-(ING) LAB 4 - Lateral movement
-
-4 Hours Remaining
-
-Instructions Resources Help  100%
-
 ## Exercise 5 - Hijack a Remote Desktop session
 
 In this exercise **Miss Red** will try steal a Remote Desktop Session without using any malicious tools, just by living off the land.

@@ -1,0 +1,2 @@
+
+Metadata = exiftool img.png
