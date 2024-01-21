@@ -31,3 +31,10 @@ where 0x9aad6148 is \SystemRoot\System32\Config\SAM
 cat hash.txt
 ```
 ![[Pasted image 20230618175519.png]]
+---
+
+View process : 
+pslist
+psscan
+pstree
+psxview -R
