@@ -30,12 +30,14 @@ GUID - Global Unique Identifier
 IAM – Identity and Access Management
 IDaas – Identity as a Service
 IFM – Install From Media
+IP - Internet protocol
 ISTG - Inter-Site Topology Generator 
 KCC - Knowledge Consistency Checker 
 KDC - Key Distribution Center 
 LAPS – Local Administrator Password Solution
 LMHash - Lan Manager Hash 
 LSASS - Local Security Authority Subsystem Service 
+MAC - Media Access Control
 MDI – Microsoft Defender for Identity
 NC - Naming Context 
 NTHash - New Technology Lan Manager Hash 

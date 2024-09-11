@@ -1,0 +1,26 @@
+{
+	"nodes":[
+		{"id":"bfdf73f37b791c67","type":"text","text":"Programme.exe","x":-400,"y":-260,"width":250,"height":100,"color":"6"},
+		{"id":"132c379d51c7825f","type":"text","text":"mov r10, rcx\nmov eax, SSN\njmp ntdll\n","x":-340,"y":-160,"width":160,"height":110,"color":"1"},
+		{"id":"ffce8d5c13b446e0","type":"text","text":"API Windows \n\nVirtualAlloc()\nKernel32.dll","x":-130,"y":-260,"width":250,"height":100,"color":"6"},
+		{"id":"666a66e8d9669738","type":"text","text":"API Windows \n\nVirtualAlloc()\nKernelBase.dll","x":140,"y":-260,"width":250,"height":100,"color":"6"},
+		{"id":"f3e8dd3037813cbe","type":"text","text":"API Native\n\nNtAllocateVirtualMemory\nNtdll.dll","x":420,"y":-260,"width":250,"height":100,"color":"6"},
+		{"id":"dcf31a23dca59885","type":"text","text":"UserLand\n\nKernelLand","x":-400,"y":0,"width":920,"height":80,"color":"5"},
+		{"id":"5389dfd49bb89a48","type":"text","text":"Kernel Windows\n\nKiSystemCall64()\nntoskrnl.exe","x":420,"y":160,"width":250,"height":140,"color":"4"},
+		{"id":"1a75346cf74e9a52","type":"text","text":"Kernel Windows\n\nKiSystemServiceCopyEnd()\nntoskrnl.exe","x":-130,"y":160,"width":250,"height":140,"color":"4"},
+		{"id":"ea2cc5613e549247","type":"text","text":"Kernel Windows\n\nSystem Service Descriptor Table SSDT\nntoskrl.exe","x":140,"y":160,"width":250,"height":140,"color":"4"},
+		{"id":"7dbf51919bc1c923","type":"text","text":"Appel Système","x":455,"y":-60,"width":180,"height":60,"color":"1"},
+		{"id":"46e30d4ad2549e21","type":"text","text":"Syscall\nret","x":395,"y":-135,"width":125,"height":60,"color":"1"}
+	],
+	"edges":[
+		{"id":"90159bd32a91e847","fromNode":"bfdf73f37b791c67","fromSide":"right","toNode":"ffce8d5c13b446e0","toSide":"left"},
+		{"id":"91c8e1692fe854cc","fromNode":"ffce8d5c13b446e0","fromSide":"right","toNode":"666a66e8d9669738","toSide":"left"},
+		{"id":"b1312a3dc7a69393","fromNode":"666a66e8d9669738","fromSide":"right","toNode":"f3e8dd3037813cbe","toSide":"left"},
+		{"id":"deab0ff7a549870d","fromNode":"f3e8dd3037813cbe","fromSide":"bottom","toNode":"7dbf51919bc1c923","toSide":"top"},
+		{"id":"a5f4bcb9c1797349","fromNode":"7dbf51919bc1c923","fromSide":"bottom","toNode":"5389dfd49bb89a48","toSide":"top"},
+		{"id":"24880338f8ce448d","fromNode":"5389dfd49bb89a48","fromSide":"left","toNode":"ea2cc5613e549247","toSide":"right"},
+		{"id":"d1b4da2ff22d9b6a","fromNode":"ea2cc5613e549247","fromSide":"left","toNode":"1a75346cf74e9a52","toSide":"right"},
+		{"id":"894d4fb5d86efa2b","fromNode":"132c379d51c7825f","fromSide":"right","toNode":"46e30d4ad2549e21","toSide":"left"},
+		{"id":"665e53d1f697679d","fromNode":"46e30d4ad2549e21","fromSide":"right","toNode":"7dbf51919bc1c923","toSide":"top"}
+	]
+}
